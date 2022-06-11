@@ -4,7 +4,6 @@ var dns = require('dns')
 var EventEmitter = require('events').EventEmitter
 var util = require('util')
 var utils = require('./utils')
-var sasl = require('./sasl')
 var pgPass = require('pgpass')
 var TypeOverrides = require('./type-overrides')
 
@@ -263,10 +262,6 @@ class Client extends EventEmitter {
     con.on('authenticationCleartextPassword', this._handleAuthCleartextPassword.bind(this))
     // password request handling
     con.on('authenticationMD5Password', this._handleAuthMD5Password.bind(this))
-    // password request handling (SASL)
-    con.on('authenticationSASL', this._handleAuthSASL.bind(this))
-    con.on('authenticationSASLContinue', this._handleAuthSASLContinue.bind(this))
-    con.on('authenticationSASLFinal', this._handleAuthSASLFinal.bind(this))
     con.on('backendKeyData', this._handleBackendKeyData.bind(this))
     con.on('error', this._handleErrorEvent.bind(this))
     con.on('errorMessage', this._handleErrorMessage.bind(this))
@@ -353,23 +348,6 @@ class Client extends EventEmitter {
       const hashedPassword = utils.postgresMd5PasswordHash(this.user, this.password, msg.salt)
       this.connection.password(hashedPassword)
     })
-  }
-
-  _handleAuthSASL(msg) {
-    this._checkPgPass(() => {
-      this.saslSession = sasl.startSession(msg.mechanisms)
-      this.connection.sendSASLInitialResponseMessage(this.saslSession.mechanism, this.saslSession.response)
-    })
-  }
-
-  _handleAuthSASLContinue(msg) {
-    sasl.continueSession(this.saslSession, this.password, msg.data)
-    this.connection.sendSCRAMClientFinalMessage(this.saslSession.response)
-  }
-
-  _handleAuthSASLFinal(msg) {
-    sasl.finalizeSession(this.saslSession, msg.data)
-    this.saslSession = null
   }
 
   _handleBackendKeyData(msg) {

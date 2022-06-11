@@ -328,26 +328,6 @@ export class Parser {
           return new AuthenticationMD5Password(length, salt)
         }
         break
-      case 10: // AuthenticationSASL
-        message.name = 'authenticationSASL'
-        message.mechanisms = []
-        let mechanism: string
-        do {
-          mechanism = this.reader.cstring()
-
-          if (mechanism) {
-            message.mechanisms.push(mechanism)
-          }
-        } while (mechanism)
-        break
-      case 11: // AuthenticationSASLContinue
-        message.name = 'authenticationSASLContinue'
-        message.data = this.reader.string(length - 8)
-        break
-      case 12: // AuthenticationSASLFinal
-        message.name = 'authenticationSASLFinal'
-        message.data = this.reader.string(length - 8)
-        break
       default:
         throw new Error('Unknown authenticationOk message type ' + code)
     }
